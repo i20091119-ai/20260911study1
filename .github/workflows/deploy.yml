@@ -1,7 +1,8 @@
 name: Deploy to GitHub Pages
 on:
   push:
-    branches: [main]
+    # main 으로 옮기면 아래 claude/... 줄은 지워도 됩니다
+    branches: [main, 'claude/intelligent-wozniak-y5ix9s']
   workflow_dispatch:
 permissions:
   contents: read
