@@ -43,7 +43,16 @@
   }
   .subBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
 
+  /* 꽃 배경 */
+  #bgFlowers { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; overflow: hidden; }
+  .flowerLayer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; overflow: hidden; }
+  .flower { position: absolute; top: 0; left: 0; }
+  .petal { position: absolute; border-radius: 50%; }
+  .core { position: absolute; border-radius: 50%; background: #ffd54f; }
+  .stem { position: absolute; background: #7cc47f; border-radius: .4vmin; }
+
   .screen {
+    z-index: 2;
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     display: none; flex-direction: column; align-items: center; justify-content: center;
     padding: 2vmin;
@@ -136,7 +145,7 @@
   /* 놀이터(하늘) */
   .play {
     flex: 1; position: relative; overflow: hidden;
-    background-image: radial-gradient(circle at 50% 100%, #3a5a45 0%, #32507b 42%, #2b4066 70%);
+    background-image: radial-gradient(circle at 50% 108%, #43704f 0%, #34578244 46%, #2b4066 74%);
   }
   .goalTag {
     position: absolute; top: 1.2vmin; left: 50%; transform: translateX(-50%);
@@ -209,6 +218,8 @@
   <img src="assets/gnmc_logo.png" alt="경남수학문화관"
        onerror="document.getElementById('orgLogoFixed').style.display='none'">
 </div>
+
+<div id="bgFlowers"></div>
 
 <!-- ① 시작 화면 -->
 <div class="screen on" id="screen-start">
@@ -283,6 +294,7 @@
   function beep(freq, dur, type, vol){
     try {
       if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended' && actx.resume) actx.resume();
       var o = actx.createOscillator(), g = actx.createGain();
       o.type = type || 'square';
       o.frequency.value = freq;
@@ -296,6 +308,16 @@
     for (var i = 0; i < list.length; i++){
       (function(f, d){ setTimeout(function(){ beep(f, 0.12, 'square', 0.07); }, d); })(list[i][0], list[i][1]);
     }
+  }
+
+  /* 터치할 때마다 나는 밝은 소리 (도-레-미-솔-라 오름차순) */
+  var BLIP = [784, 880, 988, 1175, 1319];
+  var blipAt = 0;
+  function blip(){
+    var f = BLIP[blipAt % BLIP.length];
+    blipAt++;
+    beep(f, 0.11, 'triangle', 0.05);
+    beep(f * 2, 0.07, 'sine', 0.022);
   }
 
   function mk(tag, cls, parent){
@@ -354,15 +376,15 @@
         var b = mk('button', 'pickBtn', row);
         mk('div', 'num', b).innerHTML = n;
         mk('div', 'cap', b).innerHTML = '명';
-        onTap(b, function(){ playerCount = n; beep(740, 0.07); goto('screen-rules'); });
+        onTap(b, function(){ playerCount = n; goto('screen-rules'); });
       })(i);
     }
   })();
 
-  onTap($('backBtn'),  function(){ beep(420, 0.07); goto('screen-start'); });
-  onTap($('startBtn'), function(){ beep(880, 0.09); startGame(); });
+  onTap($('backBtn'),  function(){ goto('screen-start'); });
+  onTap($('startBtn'), function(){ startGame(); });
   onTap($('quitBtn'),  function(){ endGame(); });
-  onTap($('againBtn'), function(){ beep(660, 0.08); goto('screen-start'); });
+  onTap($('againBtn'), function(){ goto('screen-start'); });
 
   /* ───────── 게임 시작 ───────── */
   function startGame(){
@@ -386,6 +408,7 @@
       mk('span', '', nm).innerHTML = (playerCount === 1 ? '나' : NAMES[i]);
       p.scoreEl = mk('div', 'pScore', bar);
       p.play  = mk('div', 'play', p.panel);
+      p.flowers = mk('div', 'flowerLayer', p.play);
       p.goalEl = mk('div', 'goalTag', p.play);
       p.burst = mk('div', 'burst', p.play);
 
@@ -446,6 +469,7 @@
       p.x *= rx; p.y *= ry; p.tx *= rx; p.ty *= ry;
       for (var i = 0; i < p.foods.length; i++){ p.foods[i].x *= rx; p.foods[i].y *= ry; }
     }
+    scatterFlowers(p.flowers, w, h, 14, small * 0.075, small * 0.16, 0.34, true);
     drawBugParts(p);
     for (var j = 0; j < p.foods.length; j++) sizeFood(p, p.foods[j]);
   }
@@ -562,14 +586,87 @@
       x: 0, y: 0, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed
     };
     sizeFood(p, f);
-    /* 무당벌레와 너무 가깝지 않게 배치 */
-    for (var t = 0; t < 30; t++){
+    /* 무당벌레·다른 먹이와 너무 가깝지 않게 배치 */
+    for (var t = 0; t < 60; t++){
       f.x = f.r + Math.random() * Math.max(1, p.w - f.r * 2);
       f.y = p.h * 0.16 + Math.random() * Math.max(1, p.h * 0.84 - f.r * 2) + f.r;
-      if (dist(f.x, f.y, p.x, p.y) > p.bugSize * 1.1) break;
+      if (dist(f.x, f.y, p.x, p.y) < p.bugSize * 1.1) continue;
+      var okPlace = true;
+      for (var q = 0; q < p.foods.length; q++){
+        if (dist(f.x, f.y, p.foods[q].x, p.foods[q].y) < f.r * 2.3){ okPlace = false; break; }
+      }
+      if (okPlace) break;
     }
     return f;
   }
+
+  /* ───────── 꽃 배경 그리기 ───────── */
+  var FLOWER_COLORS = ['#f8bbd0', '#ffffff', '#fff59d', '#e1bee7', '#ffccbc'];
+
+  function makeFlower(parent, x, y, size, rot, color, stemH){
+    var fl = mk('div', 'flower', parent);
+    fl.style.width = size + 'px';
+    fl.style.height = size + 'px';
+    fl.style.transform = 'translate(' + (x - size / 2) + 'px,' + (y - size / 2) + 'px) rotate(' + rot + 'deg)';
+    if (stemH){
+      var st = mk('div', 'stem', fl);
+      st.style.width = (size * 0.09) + 'px';
+      st.style.height = stemH + 'px';
+      st.style.left = (size / 2 - size * 0.045) + 'px';
+      st.style.top = (size * 0.45) + 'px';
+    }
+    var pw = size * 0.40, ph = size * 0.52;
+    for (var i = 0; i < 5; i++){
+      var pt = mk('div', 'petal', fl);
+      pt.style.width = pw + 'px';
+      pt.style.height = ph + 'px';
+      pt.style.background = color;
+      pt.style.left = (size / 2 - pw / 2) + 'px';
+      pt.style.top = (size / 2 - ph) + 'px';
+      pt.style.transformOrigin = '50% 100%';
+      pt.style.transform = 'rotate(' + (i * 72) + 'deg)';
+    }
+    var cs = size * 0.30;
+    var co = mk('div', 'core', fl);
+    co.style.width = cs + 'px';
+    co.style.height = cs + 'px';
+    co.style.left = (size / 2 - cs / 2) + 'px';
+    co.style.top = (size / 2 - cs / 2) + 'px';
+  }
+
+  /* 가운데는 비우고 가장자리에만 — 게임판 위 글자가 묻히지 않게 */
+  function scatterFlowers(parent, w, h, count, minS, maxS, alpha, ground){
+    parent.innerHTML = '';
+    parent.style.opacity = alpha;
+    for (var i = 0; i < count; i++){
+      var size = minS + Math.random() * (maxS - minS);
+      var x, y, rot, stem = 0;
+      if (ground && i % 5 !== 0){
+        /* 아래쪽 꽃밭 — 줄기까지 있는 꽃 */
+        x = size * 0.4 + Math.random() * Math.max(1, w - size * 0.8);
+        y = h * 0.60 + Math.random() * (h * 0.36);
+        rot = -10 + Math.random() * 20;
+        stem = size * (0.5 + Math.random() * 0.9);
+      } else {
+        /* 가장자리 — 가운데는 비워 둠 */
+        var ang = Math.random() * Math.PI * 2;
+        var rad = 0.68 + Math.random() * 0.40;
+        x = w / 2 + Math.cos(ang) * (w / 2) * rad;
+        y = h / 2 + Math.sin(ang) * (h / 2) * rad;
+        rot = Math.random() * 72;
+      }
+      x = Math.max(size * 0.25, Math.min(w - size * 0.25, x));
+      y = Math.max(size * 0.25, Math.min(h - size * 0.25, y));
+      makeFlower(parent, x, y, size, rot, FLOWER_COLORS[i % FLOWER_COLORS.length], stem);
+    }
+  }
+
+  function drawBgFlowers(){
+    var w = window.innerWidth, h = window.innerHeight;
+    var small = Math.min(w, h);
+    scatterFlowers($('bgFlowers'), w, h, 20, small * 0.045, small * 0.10, 0.24, true);
+  }
+  drawBgFlowers();
 
   function shuffle(arr){
     for (var i = arr.length - 1; i > 0; i--){
@@ -604,6 +701,7 @@
     p.ty = Math.max(0, Math.min(p.h, y - rc.top));
   }
   function pStart(id, x, y){
+    blip();
     if (!running) return;
     var i = panelAt(x, y);
     if (i < 0) return;
@@ -809,8 +907,8 @@
   /* 길게 눌러도 메뉴가 뜨지 않게 */
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
-  window.addEventListener('resize', measureAll);
-  window.addEventListener('orientationchange', function(){ setTimeout(measureAll, 300); });
+  window.addEventListener('resize', function(){ drawBgFlowers(); measureAll(); });
+  window.addEventListener('orientationchange', function(){ setTimeout(function(){ drawBgFlowers(); measureAll(); }, 300); });
 })();
 </script>
 </body>
