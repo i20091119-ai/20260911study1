@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>레이디버그 대칭 놀이</title>
+<title>레이디버그 먹이 사냥</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
   html, body { height: 100%; }
@@ -14,7 +14,7 @@
     background-image: radial-gradient(circle at 50% 38%, #2e4577 0%, #24365c 58%, #1a2745 100%);
     color: #fff;
     display: flex; flex-direction: column;
-    touch-action: manipulation;
+    touch-action: none;
   }
 
   /* ── 기관 로고 (왼쪽 위 고정) ───────────────────────── */
@@ -51,7 +51,7 @@
   .screen.on { display: flex; }
 
   /* ── 시작 화면 ─────────────────────────────────────── */
-  #titleText { font-size: 9vmin; color: #ffd54f; text-shadow: 0 .8vmin 0 rgba(0,0,0,.35); letter-spacing: .3vmin; }
+  #titleText { font-size: 8.5vmin; color: #ffd54f; text-shadow: 0 .8vmin 0 rgba(0,0,0,.35); letter-spacing: .3vmin; }
   #titleSub { font-size: 3.2vmin; color: #cfe0ff; }
   .pickLabel { font-size: 3.4vmin; color: #fff; }
   .pickBtn {
@@ -65,12 +65,17 @@
   .pickBtn .cap { font-size: 2.2vmin; margin-top: .8vmin; color: #cfe0ff; }
 
   /* 타이틀용 장식 무당벌레 */
-  #titleBug { position: relative; width: 22vmin; height: 24vmin; }
-  #titleBug .h { position: absolute; top: 0; left: 5.7vmin; width: 10.6vmin; height: 6.6vmin; background: #23272e; border-radius: 50%; }
-  #titleBug .b { position: absolute; top: 3.4vmin; left: 0; width: 22vmin; height: 20vmin; background: #e53935; border: .7vmin solid #23272e; border-radius: 50%; }
-  #titleBug .s { position: absolute; top: 4.4vmin; left: 10.6vmin; width: .8vmin; height: 18vmin; background: #23272e; border-radius: .4vmin; }
+  #titleBug { position: relative; width: 24vmin; height: 22vmin; }
+  #titleBug .wg { position: absolute; top: 5vmin; width: 9vmin; height: 12vmin; background: rgba(255,255,255,.30); border-radius: 50%; }
+  #titleBug .wgL { left: 0; transform: rotate(-18deg); animation: flapL 1.1s ease-in-out infinite; }
+  #titleBug .wgR { right: 0; transform: rotate(18deg); animation: flapR 1.1s ease-in-out infinite; }
+  #titleBug .h { position: absolute; top: 1.2vmin; left: 8.2vmin; width: 7.6vmin; height: 5vmin; background: #23272e; border-radius: 50%; }
+  #titleBug .b { position: absolute; top: 4vmin; left: 5.5vmin; width: 13vmin; height: 15vmin; background: #e53935; border: .6vmin solid #23272e; border-radius: 50%; }
+  #titleBug .s { position: absolute; top: 5vmin; left: 11.7vmin; width: .7vmin; height: 13vmin; background: #23272e; border-radius: .4vmin; }
   #titleBug .d { position: absolute; background: #23272e; border-radius: 50%; }
-  #titleBug .eye { position: absolute; top: 2.2vmin; width: 2vmin; height: 2vmin; background: #fff; border-radius: 50%; }
+  #titleBug .eye { position: absolute; top: 2.6vmin; width: 1.7vmin; height: 1.7vmin; background: #fff; border-radius: 50%; }
+  @keyframes flapL { 0%,100% { transform: rotate(-18deg) scaleY(1); } 50% { transform: rotate(-34deg) scaleY(.78); } }
+  @keyframes flapR { 0%,100% { transform: rotate(18deg) scaleY(1); } 50% { transform: rotate(34deg) scaleY(.78); } }
 
   /* ── 규칙 안내 ─────────────────────────────────────── */
   #rulesBox {
@@ -105,52 +110,79 @@
   #board.p1 { grid-template-columns: 1fr; }
   #board.p2 { grid-template-columns: 1fr 1fr; }
   #board.p3 { grid-template-columns: 1fr 1fr 1fr; }
-  #board.p4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  #board.p4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  @media (orientation: portrait) {
+    #board.p2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    #board.p3 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; }
+  }
 
   .panel {
-    background: rgba(255,255,255,.07); border: .5vmin solid rgba(255,255,255,.2);
+    background: #2b4066; border: .5vmin solid rgba(255,255,255,.2);
     border-radius: 2.4vmin; display: flex; flex-direction: column; overflow: hidden;
   }
   .pBar {
     flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-    padding: .8vmin 1.8vmin; font-size: 2.8vmin; background: rgba(0,0,0,.22);
+    padding: .8vmin 1.8vmin; font-size: 2.8vmin; background: rgba(0,0,0,.28);
   }
   #board.p1 .pBar { font-size: 3.6vmin; }
   #board.p2 .pBar { font-size: 3vmin; }
   #board.p3 .pBar, #board.p4 .pBar { font-size: 2.5vmin; }
+  #board.p1 .goalTag { font-size: 4vmin; }
+  #board.p3 .goalTag, #board.p4 .goalTag { font-size: 2.5vmin; }
   .pName { display: flex; align-items: center; }
   .pDot { width: 3vmin; height: 3vmin; border-radius: 50%; margin-right: 1.2vmin; border: .3vmin solid rgba(255,255,255,.6); }
   .pScore { color: #ffd54f; }
-  .pStage { color: #cfe0ff; font-size: .84em; }
-  .bugWrap { flex: 1; position: relative; }
 
-  .bug { position: absolute; }
+  /* 놀이터(하늘) */
+  .play {
+    flex: 1; position: relative; overflow: hidden;
+    background-image: radial-gradient(circle at 50% 100%, #3a5a45 0%, #32507b 42%, #2b4066 70%);
+  }
+  .goalTag {
+    position: absolute; top: 1.2vmin; left: 50%; transform: translateX(-50%);
+    font-size: 3.2vmin;
+    background: rgba(10,18,38,.82); border: .35vmin solid #ffd54f; color: #ffd54f;
+    border-radius: 1.6vmin; padding: .8vmin 2.4vmin; white-space: nowrap; z-index: 6;
+  }
+  .goalTag .cnt { color: #fff; }
+
+  /* 먹이 */
+  .food { position: absolute; top: 0; left: 0; border-radius: 50%; background: #fff8e1;
+          border-style: solid; border-color: #c89a4a; display: flex; align-items: center; justify-content: center;
+          color: #4a3208; }
+  .play.hint .food.good { border-color: #76ff03; background: #f1ffe0; }
+  .food .leaf { position: absolute; background: #4caf50; border-radius: 50% 0 50% 50%; }
+  .food.eaten { animation: eat .3s ease-out forwards; }
+  @keyframes eat { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+
+  /* 무당벌레 */
+  .bug { position: absolute; top: 0; left: 0; z-index: 5; }
+  .bugWing { position: absolute; background: rgba(255,255,255,.34); border-radius: 50%; }
+  .bugWL { animation: flapL .18s ease-in-out infinite; }
+  .bugWR { animation: flapR .18s ease-in-out infinite; }
   .bugHead { position: absolute; background: #23272e; border-radius: 50%; }
   .bugEye { position: absolute; background: #fff; border-radius: 50%; }
-  .bugBody { position: absolute; background: #e53935; border-radius: 50%; border-style: solid; border-color: #23272e; overflow: hidden; }
+  .bugBody { position: absolute; background: #e53935; border-radius: 50%; border-style: solid; border-color: #23272e; }
   .bugSpine { position: absolute; background: #23272e; border-radius: 1vmin; }
-  .wing { position: absolute; display: grid; }
-  .cell { position: relative; border-radius: 22%; }
-  .wingR .cell { background: rgba(255,255,255,.22); box-shadow: inset 0 0 0 .25vmin rgba(255,255,255,.3); }
-  .wingR .cell.done { background: transparent; box-shadow: none; }
-  .spot { position: absolute; top: 8%; left: 8%; width: 84%; height: 84%; background: #23272e; border-radius: 50%; }
-  .spot.pop { animation: pop .28s ease-out; }
-  @keyframes pop { 0% { transform: scale(.2); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-  .ghost {
-    position: absolute; top: 14%; left: 14%; width: 72%; height: 72%;
-    border-radius: 50%; border-style: dashed; border-color: rgba(35,39,46,.75); display: none;
+  .bugDot { position: absolute; background: #23272e; border-radius: 50%; }
+  .bug.dizzy { animation: dizzy .5s linear infinite; }
+  @keyframes dizzy { 0% { filter: none; } 50% { filter: brightness(1.8); } 100% { filter: none; } }
+
+  .fly {
+    position: absolute; z-index: 7; font-size: 3vmin; color: #fff;
+    text-shadow: 0 .3vmin 0 rgba(0,0,0,.5); animation: fly .8s ease-out forwards;
   }
-  .wingR.hint .cell.need .ghost { display: block; }
-  .cell.bad { animation: bad .35s ease-out; }
-  @keyframes bad { 0%,100% { transform: translateX(0); background: rgba(255,255,255,.22); } 25% { transform: translateX(-12%); background: rgba(255,255,255,.7); } 75% { transform: translateX(12%); background: rgba(255,255,255,.7); } }
+  .fly.minus { color: #ff8a80; }
+  @keyframes fly { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-7vmin); opacity: 0; } }
 
   .burst {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    font-size: 6vmin; color: #fff; text-shadow: 0 .5vmin 0 rgba(0,0,0,.4);
+    font-size: 5vmin; color: #fff; text-shadow: 0 .5vmin 0 rgba(0,0,0,.4);
     background: rgba(67,160,71,.92); padding: 1.2vmin 4vmin; border-radius: 2vmin;
-    display: none; z-index: 5;
+    display: none; z-index: 8;
   }
   .burst.on { display: block; animation: pop .35s ease-out; }
+  @keyframes pop { 0% { transform: translate(-50%,-50%) scale(.4); } 60% { transform: translate(-50%,-50%) scale(1.15); } 100% { transform: translate(-50%,-50%) scale(1); } }
 
   /* ── 결과 화면 ─────────────────────────────────────── */
   #resultTitle { font-size: 7vmin; color: #ffd54f; }
@@ -182,19 +214,21 @@
 <div class="screen on" id="screen-start">
   <div class="row">
     <div id="titleBug">
+      <div class="wg wgL"></div>
+      <div class="wg wgR"></div>
       <div class="h"></div>
-      <div class="eye" style="left:7.4vmin"></div>
-      <div class="eye" style="left:12.6vmin"></div>
+      <div class="eye" style="left:9.6vmin"></div>
+      <div class="eye" style="left:12.9vmin"></div>
       <div class="b"></div>
       <div class="s"></div>
-      <div class="d" style="width:3.4vmin;height:3.4vmin;top:8vmin;left:4.2vmin"></div>
-      <div class="d" style="width:3.4vmin;height:3.4vmin;top:8vmin;left:14.4vmin"></div>
-      <div class="d" style="width:2.6vmin;height:2.6vmin;top:15vmin;left:5.6vmin"></div>
-      <div class="d" style="width:2.6vmin;height:2.6vmin;top:15vmin;left:13.8vmin"></div>
+      <div class="d" style="width:2.6vmin;height:2.6vmin;top:7.4vmin;left:7.4vmin"></div>
+      <div class="d" style="width:2.6vmin;height:2.6vmin;top:7.4vmin;left:13.6vmin"></div>
+      <div class="d" style="width:2vmin;height:2vmin;top:13vmin;left:8.6vmin"></div>
+      <div class="d" style="width:2vmin;height:2vmin;top:13vmin;left:13.2vmin"></div>
     </div>
     <div class="col">
-      <div id="titleText">레이디버그 대칭 놀이</div>
-      <div id="titleSub">왼쪽 날개를 거울처럼 따라 찍어요!</div>
+      <div id="titleText">레이디버그 먹이 사냥</div>
+      <div id="titleSub">날아다니며 조건에 맞는 수만 먹어요!</div>
     </div>
   </div>
   <div style="height:5vmin"></div>
@@ -207,11 +241,12 @@
 <div class="screen" id="screen-rules">
   <div id="rulesBox">
     <h2>이렇게 놀아요</h2>
-    <div class="ruleLine"><div class="ruleNo">1</div><div>무당벌레 <span class="hi">왼쪽 날개</span>에 점이 찍혀 있어요.</div></div>
-    <div class="ruleLine"><div class="ruleNo">2</div><div><span class="hi">오른쪽 날개</span>에서 거울처럼 대칭이 되는 칸을 손가락으로 누르세요.</div></div>
-    <div class="ruleLine"><div class="ruleNo">3</div><div>맞으면 <span class="hi">5점</span>, 한 마리를 완성하면 <span class="hi">20점</span>! 힌트 없이 완성하면 <span class="hi">10점</span> 더!</div></div>
-    <div class="ruleLine"><div class="ruleNo">4</div><div>힌트(점선)는 1~2판은 계속, 3판은 10초 뒤, <span class="hi">4판부터는 없어요.</span></div></div>
-    <div class="ruleLine"><div class="ruleNo">5</div><div>제한시간 <span class="hi">2분</span>. 모두 <span class="hi">동시에</span> 자기 무당벌레를 완성하세요!</div></div>
+    <div class="ruleLine"><div class="ruleNo">1</div><div>자기 화면을 <span class="hi">손가락으로 누르거나 끌면</span> 무당벌레가 그쪽으로 날아가요.</div></div>
+    <div class="ruleLine"><div class="ruleNo">2</div><div>위에 적힌 <span class="hi">먹이 조건</span>(짝수·홀수·배수 …)에 맞는 열매만 먹으세요.</div></div>
+    <div class="ruleLine"><div class="ruleNo">3</div><div>맞는 열매 <span class="hi">+10점</span>, 조건에 맞는 열매를 다 먹으면 <span class="hi">+20점</span>!</div></div>
+    <div class="ruleLine"><div class="ruleNo">4</div><div>틀린 열매를 먹으면 <span class="hi">-5점</span>, 잠깐 어지러워서 못 움직여요.</div></div>
+    <div class="ruleLine"><div class="ruleNo">5</div><div>초록 테두리 힌트는 1~2판만 계속, 3판은 10초 뒤, <span class="hi">4판부터 없어요.</span></div></div>
+    <div class="ruleLine"><div class="ruleNo">6</div><div>제한시간 <span class="hi">2분</span>. 모두 <span class="hi">동시에</span> 날면서 대결해요!</div></div>
   </div>
   <div style="height:4vmin"></div>
   <div class="row">
@@ -263,7 +298,13 @@
     }
   }
 
-  /* ───────── 터치 헬퍼 (click 대신 pointerdown) ───────── */
+  function mk(tag, cls, parent){
+    var d = document.createElement(tag);
+    if (cls) d.className = cls;
+    if (parent) parent.appendChild(d);
+    return d;
+  }
+  function $(id){ return document.getElementById(id); }
   function onTap(el, fn){
     if (window.PointerEvent){
       el.addEventListener('pointerdown', function(e){ e.preventDefault(); fn(e); });
@@ -273,32 +314,30 @@
       el.addEventListener('mousedown', function(e){ if (touched) return; e.preventDefault(); fn(e); });
     }
   }
-  function mk(tag, cls, parent){
-    var d = document.createElement(tag);
-    if (cls) d.className = cls;
-    if (parent) parent.appendChild(d);
-    return d;
-  }
-  function $(id){ return document.getElementById(id); }
 
   /* ───────── 설정 ───────── */
   var COLORS = ['#e53935', '#1e88e5', '#43a047', '#f9a825'];
   var NAMES  = ['빨강', '파랑', '초록', '노랑'];
-  var LEVELS = [
-    { rows: 2, cols: 2, spots: 2 },
-    { rows: 3, cols: 2, spots: 3 },
-    { rows: 3, cols: 3, spots: 4 },
-    { rows: 4, cols: 3, spots: 5 },
-    { rows: 4, cols: 3, spots: 6 },
-    { rows: 4, cols: 4, spots: 6 },
-    { rows: 4, cols: 4, spots: 8 }
-  ];
   var GAME_TIME = 120;
+
+  /* 먹이 조건: 쉬운 것(easy) 먼저, 3판부터 전체 */
+  var RULES = [
+    { t: '짝수만',          easy: 1, f: function(n){ return n % 2 === 0; } },
+    { t: '홀수만',          easy: 1, f: function(n){ return n % 2 === 1; } },
+    { t: '10보다 큰 수만',  easy: 1, f: function(n){ return n > 10; } },
+    { t: '10보다 작은 수만',easy: 1, f: function(n){ return n < 10; } },
+    { t: '2의 배수만',      easy: 0, f: function(n){ return n % 2 === 0; } },
+    { t: '3의 배수만',      easy: 0, f: function(n){ return n % 3 === 0; } },
+    { t: '4의 배수만',      easy: 0, f: function(n){ return n % 4 === 0; } },
+    { t: '5의 배수만',      easy: 0, f: function(n){ return n % 5 === 0; } }
+  ];
 
   var players = [];
   var playerCount = 1;
   var timeLeft = GAME_TIME;
   var tickId = null;
+  var rafId = null;
+  var lastFrame = 0;
   var running = false;
 
   /* ───────── 화면 전환 ───────── */
@@ -308,22 +347,21 @@
     $(id).className = 'screen on';
   }
 
-  /* ───────── 시작 화면 인원 선택 ───────── */
   (function buildPick(){
     var row = $('pickRow');
     for (var i = 1; i <= 4; i++){
       (function(n){
         var b = mk('button', 'pickBtn', row);
-        var num = mk('div', 'num', b); num.innerHTML = n;
-        var cap = mk('div', 'cap', b); cap.innerHTML = '명';
+        mk('div', 'num', b).innerHTML = n;
+        mk('div', 'cap', b).innerHTML = '명';
         onTap(b, function(){ playerCount = n; beep(740, 0.07); goto('screen-rules'); });
       })(i);
     }
   })();
 
-  onTap($('backBtn'), function(){ beep(420, 0.07); goto('screen-start'); });
+  onTap($('backBtn'),  function(){ beep(420, 0.07); goto('screen-start'); });
   onTap($('startBtn'), function(){ beep(880, 0.09); startGame(); });
-  onTap($('quitBtn'), function(){ endGame(); });
+  onTap($('quitBtn'),  function(){ endGame(); });
   onTap($('againBtn'), function(){ beep(660, 0.08); goto('screen-start'); });
 
   /* ───────── 게임 시작 ───────── */
@@ -336,139 +374,349 @@
     for (var i = 0; i < playerCount; i++){
       var p = {
         n: i, score: 0, round: 0, cleared: 0, mistakes: 0,
-        rows: 2, cols: 2, need: [], left: 0, usedHint: false,
-        roundStart: 0, hintOn: false
+        x: 0, y: 0, tx: 0, ty: 0, dizzyUntil: 0,
+        foods: [], goodLeft: 0, rule: null,
+        usedHint: false, hintOn: false, roundStart: 0,
+        w: 0, h: 0, bugSize: 0, foodSize: 0
       };
-      p.panel  = mk('div', 'panel', board);
+      p.panel = mk('div', 'panel', board);
       var bar  = mk('div', 'pBar', p.panel);
       var nm   = mk('div', 'pName', bar);
-      var dot  = mk('div', 'pDot', nm); dot.style.background = COLORS[i];
-      var lbl  = mk('span', '', nm); lbl.innerHTML = (playerCount === 1 ? '나' : NAMES[i]);
-      p.stageEl = mk('div', 'pStage', bar);
+      mk('div', 'pDot', nm).style.background = COLORS[i];
+      mk('span', '', nm).innerHTML = (playerCount === 1 ? '나' : NAMES[i]);
       p.scoreEl = mk('div', 'pScore', bar);
-      p.wrap  = mk('div', 'bugWrap', p.panel);
-      p.bug   = mk('div', 'bug', p.wrap);
+      p.play  = mk('div', 'play', p.panel);
+      p.goalEl = mk('div', 'goalTag', p.play);
+      p.burst = mk('div', 'burst', p.play);
+
+      /* 무당벌레 만들기 */
+      p.bug   = mk('div', 'bug', p.play);
+      p.wingL = mk('div', 'bugWing bugWL', p.bug);
+      p.wingR = mk('div', 'bugWing bugWR', p.bug);
       p.head  = mk('div', 'bugHead', p.bug);
       p.eye1  = mk('div', 'bugEye', p.bug);
       p.eye2  = mk('div', 'bugEye', p.bug);
       p.body  = mk('div', 'bugBody', p.bug);
-      p.spine = mk('div', 'bugSpine', p.body);
-      p.wingL = mk('div', 'wing wingL', p.body);
-      p.wingR = mk('div', 'wing wingR', p.body);
-      p.burst = mk('div', 'burst', p.wrap);
-      p.burst.innerHTML = '완성!';
+      p.spine = mk('div', 'bugSpine', p.bug);
+      p.dots  = [];
+      for (var d = 0; d < 4; d++) p.dots.push(mk('div', 'bugDot', p.bug));
+
       players.push(p);
-      newRound(p);
     }
 
     timeLeft = GAME_TIME;
     updateTime();
     goto('screen-game');
     /* 화면이 보이게 된 뒤에 크기를 계산해야 함 (숨겨진 요소는 크기가 0) */
-    layoutAll();
-    setTimeout(layoutAll, 60);
+    measureAll();
+    for (var k = 0; k < players.length; k++){
+      players[k].x = players[k].w / 2;
+      players[k].y = players[k].h / 2;
+      players[k].tx = players[k].x;
+      players[k].ty = players[k].y;
+      newRound(players[k]);
+    }
+    setTimeout(measureAll, 80);
+
     running = true;
     if (tickId) clearInterval(tickId);
     tickId = setInterval(tick, 200);
+    lastFrame = Date.now();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  /* ───────── 크기 계산 (aspect-ratio 대신 JS) ───────── */
+  function measureAll(){
+    for (var i = 0; i < players.length; i++) measureOne(players[i]);
+  }
+
+  function measureOne(p){
+    var w = p.play.clientWidth, h = p.play.clientHeight;
+    if (!w || !h) return;
+    var oldW = p.w, oldH = p.h;
+    p.w = w; p.h = h;
+    var small = Math.min(w, h);
+    p.bugSize  = Math.max(48, small * 0.20);
+    p.foodSize = Math.max(38, small * 0.155);
+
+    /* 화면이 바뀌면 좌표를 비율로 옮김 */
+    if (oldW && oldH){
+      var rx = w / oldW, ry = h / oldH;
+      p.x *= rx; p.y *= ry; p.tx *= rx; p.ty *= ry;
+      for (var i = 0; i < p.foods.length; i++){ p.foods[i].x *= rx; p.foods[i].y *= ry; }
+    }
+    drawBugParts(p);
+    for (var j = 0; j < p.foods.length; j++) sizeFood(p, p.foods[j]);
+  }
+
+  function drawBugParts(p){
+    var s = p.bugSize;
+    p.bug.style.width = s + 'px';
+    p.bug.style.height = s + 'px';
+
+    var bw = s * 0.62, bh = s * 0.72;
+    p.body.style.width = bw + 'px';
+    p.body.style.height = bh + 'px';
+    p.body.style.left = ((s - bw) / 2) + 'px';
+    p.body.style.top = (s * 0.26) + 'px';
+    p.body.style.borderWidth = Math.max(2, s * 0.035) + 'px';
+
+    var hw = s * 0.42, hh = s * 0.30;
+    p.head.style.width = hw + 'px';
+    p.head.style.height = hh + 'px';
+    p.head.style.left = ((s - hw) / 2) + 'px';
+    p.head.style.top = (s * 0.08) + 'px';
+
+    var ew = s * 0.085;
+    p.eye1.style.width = p.eye2.style.width = ew + 'px';
+    p.eye1.style.height = p.eye2.style.height = ew + 'px';
+    p.eye1.style.top = p.eye2.style.top = (s * 0.15) + 'px';
+    p.eye1.style.left = (s / 2 - hw * 0.26 - ew / 2) + 'px';
+    p.eye2.style.left = (s / 2 + hw * 0.26 - ew / 2) + 'px';
+
+    var sw = Math.max(2, s * 0.035);
+    p.spine.style.width = sw + 'px';
+    p.spine.style.height = (bh * 0.86) + 'px';
+    p.spine.style.left = (s / 2 - sw / 2) + 'px';
+    p.spine.style.top = (s * 0.30) + 'px';
+
+    var dPos = [[-0.16, 0.40, 0.13], [0.16, 0.40, 0.13], [-0.14, 0.64, 0.10], [0.14, 0.64, 0.10]];
+    for (var i = 0; i < 4; i++){
+      var dd = p.dots[i], ds = s * dPos[i][2];
+      dd.style.width = ds + 'px';
+      dd.style.height = ds + 'px';
+      dd.style.left = (s / 2 + s * dPos[i][0] - ds / 2) + 'px';
+      dd.style.top = (s * dPos[i][1] - ds / 2) + 'px';
+    }
+
+    var ww = s * 0.40, wh = s * 0.56;
+    p.wingL.style.width = p.wingR.style.width = ww + 'px';
+    p.wingL.style.height = p.wingR.style.height = wh + 'px';
+    p.wingL.style.top = p.wingR.style.top = (s * 0.20) + 'px';
+    p.wingL.style.left = (s / 2 - bw * 0.48 - ww * 0.62) + 'px';
+    p.wingR.style.left = (s / 2 + bw * 0.48 - ww * 0.38) + 'px';
+  }
+
+  function sizeFood(p, f){
+    var s = p.foodSize;
+    f.el.style.width = s + 'px';
+    f.el.style.height = s + 'px';
+    f.el.style.borderWidth = Math.max(2, s * 0.09) + 'px';
+    f.el.style.fontSize = (s * 0.46) + 'px';
+    f.leaf.style.width = (s * 0.34) + 'px';
+    f.leaf.style.height = (s * 0.22) + 'px';
+    f.leaf.style.left = (s * 0.50) + 'px';
+    f.leaf.style.top = (-s * 0.16) + 'px';
+    f.r = s / 2;
   }
 
   /* ───────── 한 판 만들기 ───────── */
   function newRound(p){
     p.round++;
-    var maxLv = (playerCount >= 3) ? 4 : (LEVELS.length - 1);
-    var li = p.round - 1;
-    if (li > maxLv) li = maxLv;
-    var lv = LEVELS[li];
-    p.rows = lv.rows;
-    p.cols = lv.cols;
-
-    var total = p.rows * p.cols;
-    var idxs = [];
-    for (var i = 0; i < total; i++) idxs.push(i);
-    for (var j = idxs.length - 1; j > 0; j--){
-      var k = Math.floor(Math.random() * (j + 1));
-      var t = idxs[j]; idxs[j] = idxs[k]; idxs[k] = t;
+    for (var i = 0; i < p.foods.length; i++){
+      if (p.foods[i].el.parentNode) p.foods[i].el.parentNode.removeChild(p.foods[i].el);
     }
-    var count = Math.min(lv.spots, total - 1);
-    var pattern = [];
-    for (var m = 0; m < total; m++) pattern.push(false);
-    for (var q = 0; q < count; q++) pattern[idxs[q]] = true;
+    p.foods = [];
 
-    p.need = [];
-    for (var r = 0; r < p.rows; r++){
-      for (var c = 0; c < p.cols; c++){
-        p.need[r * p.cols + (p.cols - 1 - c)] = pattern[r * p.cols + c];
-      }
+    /* 조건 고르기 — 1~2판은 쉬운 것만 */
+    var pool = [];
+    for (var r = 0; r < RULES.length; r++){
+      if (p.round > 2 || RULES[r].easy) pool.push(RULES[r]);
     }
-    p.left = count;
+    p.rule = pool[Math.floor(Math.random() * pool.length)];
+
+    /* 1~20 중에서 맞는 수 / 틀린 수 나누기 */
+    var good = [], bad = [];
+    for (var n = 1; n <= 20; n++) (p.rule.f(n) ? good : bad).push(n);
+    shuffle(good); shuffle(bad);
+
+    var total = Math.min(10, 5 + p.round);
+    var gCount = Math.max(3, Math.min(good.length, Math.floor(total * 0.45)));
+    var bCount = Math.min(bad.length, total - gCount);
+
+    var list = [];
+    for (var a = 0; a < gCount; a++) list.push({ v: good[a], ok: true });
+    for (var b = 0; b < bCount; b++) list.push({ v: bad[b], ok: false });
+    shuffle(list);
+
+    var speed = 0.35 + p.round * 0.12;
+    for (var c = 0; c < list.length; c++) p.foods.push(makeFood(p, list[c].v, list[c].ok, speed));
+
+    p.goodLeft = gCount;
     p.usedHint = false;
     p.hintOn = false;
+    p.play.className = 'play';
     p.roundStart = Date.now();
-
-    /* 왼쪽 날개(문제) */
-    p.wingL.innerHTML = '';
-    p.wingL.style.gridTemplateColumns = repeat(p.cols);
-    p.wingL.style.gridTemplateRows = repeat(p.rows);
-    for (var a = 0; a < total; a++){
-      var cl = mk('div', 'cell', p.wingL);
-      if (pattern[a]) mk('div', 'spot', cl);
-    }
-
-    /* 오른쪽 날개(정답 찍는 곳) */
-    p.wingR.innerHTML = '';
-    p.wingR.className = 'wing wingR';
-    p.wingR.style.gridTemplateColumns = repeat(p.cols);
-    p.wingR.style.gridTemplateRows = repeat(p.rows);
-    p.cells = [];
-    for (var b = 0; b < total; b++){
-      (function(idx){
-        var cl = mk('div', 'cell', p.wingR);
-        if (p.need[idx]) cl.className = 'cell need';
-        mk('div', 'ghost', cl);
-        onTap(cl, function(){ tapCell(p, idx, cl); });
-        p.cells.push(cl);
-      })(b);
-    }
     updateBar(p);
-    layoutOne(p);
   }
 
-  function repeat(n){
-    var s = '';
-    for (var i = 0; i < n; i++) s += (i ? ' ' : '') + '1fr';
-    return s;
+  function makeFood(p, value, ok, speed){
+    var el = mk('div', 'food' + (ok ? ' good' : ''), p.play);
+    var leaf = mk('div', 'leaf', el);
+    var txt = mk('span', '', el);
+    txt.innerHTML = value;
+    var ang = Math.random() * Math.PI * 2;
+    var f = {
+      el: el, leaf: leaf, v: value, ok: ok, r: p.foodSize / 2, alive: true,
+      x: 0, y: 0, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed
+    };
+    sizeFood(p, f);
+    /* 무당벌레와 너무 가깝지 않게 배치 */
+    for (var t = 0; t < 30; t++){
+      f.x = f.r + Math.random() * Math.max(1, p.w - f.r * 2);
+      f.y = p.h * 0.16 + Math.random() * Math.max(1, p.h * 0.84 - f.r * 2) + f.r;
+      if (dist(f.x, f.y, p.x, p.y) > p.bugSize * 1.1) break;
+    }
+    return f;
+  }
+
+  function shuffle(arr){
+    for (var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+  }
+  function dist(x1, y1, x2, y2){
+    var dx = x1 - x2, dy = y1 - y2;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   function updateBar(p){
     p.scoreEl.innerHTML = p.score + '점';
-    p.stageEl.innerHTML = p.round + '판 · 남은 점 ' + p.left;
+    p.goalEl.innerHTML = p.rule.t + ' 먹기! <span class="cnt">남은 ' + p.goodLeft + '개</span>';
   }
 
-  /* ───────── 칸 누르기 ───────── */
-  function tapCell(p, idx, cl){
-    if (!running) return;
-    if (cl.getAttribute('data-done') === '1') return;
+  /* ───────── 손가락 조작 (여러 명 동시) ───────── */
+  var pointerOwner = {};
 
-    if (p.need[idx]){
-      cl.setAttribute('data-done', '1');
-      cl.className = 'cell done';
-      var sp = mk('div', 'spot pop', cl);
-      sp.style.background = '#23272e';
-      p.score += 5;
-      p.left--;
+  function panelAt(x, y){
+    for (var i = 0; i < players.length; i++){
+      var rc = players[i].play.getBoundingClientRect();
+      if (x >= rc.left && x <= rc.right && y >= rc.top && y <= rc.bottom) return i;
+    }
+    return -1;
+  }
+  function setTarget(i, x, y){
+    var p = players[i];
+    var rc = p.play.getBoundingClientRect();
+    p.tx = Math.max(0, Math.min(p.w, x - rc.left));
+    p.ty = Math.max(0, Math.min(p.h, y - rc.top));
+  }
+  function pStart(id, x, y){
+    if (!running) return;
+    var i = panelAt(x, y);
+    if (i < 0) return;
+    pointerOwner[id] = i;
+    setTarget(i, x, y);
+  }
+  function pMove(id, x, y){
+    if (!running) return;
+    var i = pointerOwner[id];
+    if (i === undefined) return;
+    setTarget(i, x, y);
+  }
+  function pEnd(id){ delete pointerOwner[id]; }
+
+  if (window.PointerEvent){
+    document.addEventListener('pointerdown', function(e){ pStart(e.pointerId, e.clientX, e.clientY); });
+    document.addEventListener('pointermove', function(e){ pMove(e.pointerId, e.clientX, e.clientY); });
+    document.addEventListener('pointerup', function(e){ pEnd(e.pointerId); });
+    document.addEventListener('pointercancel', function(e){ pEnd(e.pointerId); });
+  } else {
+    document.addEventListener('touchstart', function(e){
+      for (var i = 0; i < e.changedTouches.length; i++){
+        var t = e.changedTouches[i]; pStart(t.identifier, t.clientX, t.clientY);
+      }
+    });
+    document.addEventListener('touchmove', function(e){
+      for (var i = 0; i < e.changedTouches.length; i++){
+        var t = e.changedTouches[i]; pMove(t.identifier, t.clientX, t.clientY);
+      }
+      if (running) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', function(e){
+      for (var i = 0; i < e.changedTouches.length; i++) pEnd(e.changedTouches[i].identifier);
+    });
+    document.addEventListener('mousedown', function(e){ pStart('m', e.clientX, e.clientY); });
+    document.addEventListener('mousemove', function(e){ pMove('m', e.clientX, e.clientY); });
+    document.addEventListener('mouseup', function(){ pEnd('m'); });
+  }
+
+  /* ───────── 프레임 ───────── */
+  function loop(){
+    if (!running) return;
+    var now = Date.now();
+    var k = Math.min(3, (now - lastFrame) / 16.7);
+    lastFrame = now;
+    for (var i = 0; i < players.length; i++) step(players[i], k, now);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function step(p, k, now){
+    if (!p.w) { measureOne(p); return; }
+    var half = p.bugSize / 2;
+
+    /* 무당벌레 날기 */
+    var dizzy = now < p.dizzyUntil;
+    if (!dizzy){
+      var ease = Math.min(0.9, 0.11 * k);
+      p.x += (p.tx - p.x) * ease;
+      p.y += (p.ty - p.y) * ease;
+    }
+    p.x = Math.max(half, Math.min(p.w - half, p.x));
+    p.y = Math.max(half, Math.min(p.h - half, p.y));
+
+    var tilt = Math.max(-26, Math.min(26, (p.tx - p.x) * 0.35));
+    if (dizzy) tilt = (now % 360);
+    p.bug.style.transform = 'translate(' + (p.x - half) + 'px,' + (p.y - half) + 'px) rotate(' + tilt + 'deg)';
+
+    /* 먹이 떠다니기 + 먹기 판정 */
+    for (var i = 0; i < p.foods.length; i++){
+      var f = p.foods[i];
+      if (!f.alive) continue;
+      f.x += f.vx * k;
+      f.y += f.vy * k;
+      if (f.x < f.r){ f.x = f.r; f.vx = -f.vx; }
+      if (f.x > p.w - f.r){ f.x = p.w - f.r; f.vx = -f.vx; }
+      if (f.y < f.r + p.h * 0.13){ f.y = f.r + p.h * 0.13; f.vy = -f.vy; }
+      if (f.y > p.h - f.r){ f.y = p.h - f.r; f.vy = -f.vy; }
+      f.el.style.transform = 'translate(' + (f.x - f.r) + 'px,' + (f.y - f.r) + 'px)';
+
+      if (!dizzy && dist(f.x, f.y, p.x, p.y) < f.r + half * 0.72) eat(p, f, now);
+    }
+  }
+
+  function eat(p, f, now){
+    f.alive = false;
+    f.el.className = f.el.className + ' eaten';
+    (function(el){ setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 320); })(f.el);
+
+    if (f.ok){
+      p.score += 10;
+      p.goodLeft--;
       beep(880, 0.07, 'square', 0.05);
+      popText(p, f, '+10', false);
       updateBar(p);
-      if (p.left <= 0) roundDone(p);
+      if (p.goodLeft <= 0) roundDone(p);
     } else {
       p.mistakes++;
-      beep(160, 0.16, 'sawtooth', 0.05);
-      cl.className = 'cell bad';
-      (function(c){
-        setTimeout(function(){
-          if (c.getAttribute('data-done') !== '1') c.className = (p.need[idx] ? 'cell need' : 'cell');
-        }, 360);
-      })(cl);
+      p.score = Math.max(0, p.score - 5);
+      p.dizzyUntil = now + 700;
+      p.bug.className = 'bug dizzy';
+      (function(pp){ setTimeout(function(){ pp.bug.className = 'bug'; }, 700); })(p);
+      beep(160, 0.18, 'sawtooth', 0.05);
+      popText(p, f, '-5', true);
+      updateBar(p);
     }
+  }
+
+  function popText(p, f, txt, minus){
+    var t = mk('div', 'fly' + (minus ? ' minus' : ''), p.play);
+    t.innerHTML = txt;
+    t.style.left = (f.x - f.r) + 'px';
+    t.style.top = (f.y - f.r) + 'px';
+    setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 820);
   }
 
   function roundDone(p){
@@ -476,85 +724,14 @@
     p.score += 20;
     var bonus = !p.usedHint;
     if (bonus) p.score += 10;
-    updateBar(p);
+    p.scoreEl.innerHTML = p.score + '점';
     chord([[660, 0], [880, 90], [1180, 180]]);
-    p.burst.innerHTML = bonus ? '완성! +30' : '완성! +20';
+    p.burst.innerHTML = bonus ? '다 먹었다! +30' : '다 먹었다! +20';
     p.burst.className = 'burst on';
     setTimeout(function(){
       p.burst.className = 'burst';
       if (running) newRound(p);
-    }, 700);
-  }
-
-  /* ───────── 크기 계산 (aspect-ratio 대신 JS) ───────── */
-  function layoutAll(){
-    for (var i = 0; i < players.length; i++) layoutOne(players[i]);
-  }
-
-  function layoutOne(p){
-    var w = p.wrap.clientWidth, h = p.wrap.clientHeight;
-    if (!w || !h) return;
-
-    var bugW = Math.min(w * 0.94, (h * 0.99) / 1.33);
-    var bugH = bugW * 1.15;
-    var over = bugH * 0.15;
-
-    p.bug.style.width = bugW + 'px';
-    p.bug.style.height = (bugH + over) + 'px';
-    p.bug.style.left = ((w - bugW) / 2) + 'px';
-    p.bug.style.top = ((h - bugH - over) / 2) + 'px';
-
-    var hw = bugW * 0.54, hh = bugH * 0.32;
-    p.head.style.width = hw + 'px';
-    p.head.style.height = hh + 'px';
-    p.head.style.left = ((bugW - hw) / 2) + 'px';
-    p.head.style.top = '0px';
-
-    var ew = bugW * 0.075;
-    p.eye1.style.width = p.eye2.style.width = ew + 'px';
-    p.eye1.style.height = p.eye2.style.height = ew + 'px';
-    p.eye1.style.top = p.eye2.style.top = (hh * 0.30) + 'px';
-    p.eye1.style.left = (bugW / 2 - hw * 0.28 - ew / 2) + 'px';
-    p.eye2.style.left = (bugW / 2 + hw * 0.28 - ew / 2) + 'px';
-
-    p.body.style.width = bugW + 'px';
-    p.body.style.height = bugH + 'px';
-    p.body.style.left = '0px';
-    p.body.style.top = over + 'px';
-    p.body.style.borderWidth = Math.max(2, bugW * 0.022) + 'px';
-
-    var sw = Math.max(3, bugW * 0.035);
-    p.spine.style.width = sw + 'px';
-    p.spine.style.height = (bugH * 0.84) + 'px';
-    p.spine.style.left = (bugW / 2 - sw / 2) + 'px';
-    p.spine.style.top = (bugH * 0.08) + 'px';
-
-    var midGap = bugW * 0.05;
-    var availW = bugW * 0.5 - midGap - bugW * 0.065;
-    var availH = bugH * 0.70;
-    var cell = Math.min(
-      availW / (p.cols + (p.cols - 1) * 0.16),
-      availH / (p.rows + (p.rows - 1) * 0.16)
-    );
-    var gp = cell * 0.16;
-    var gw = p.cols * cell + (p.cols - 1) * gp;
-    var gh = p.rows * cell + (p.rows - 1) * gp;
-    var top = (bugH - gh) / 2 + bugH * 0.04;
-
-    p.wingL.style.width = gw + 'px';
-    p.wingL.style.height = gh + 'px';
-    p.wingL.style.top = top + 'px';
-    p.wingL.style.left = (bugW / 2 - midGap - gw) + 'px';
-    p.wingL.style.gridGap = gp + 'px';
-
-    p.wingR.style.width = gw + 'px';
-    p.wingR.style.height = gh + 'px';
-    p.wingR.style.top = top + 'px';
-    p.wingR.style.left = (bugW / 2 + midGap) + 'px';
-    p.wingR.style.gridGap = gp + 'px';
-
-    var gs = document.querySelectorAll('.ghost');
-    for (var i = 0; i < gs.length; i++) gs[i].style.borderWidth = Math.max(2, cell * 0.1) + 'px';
+    }, 800);
   }
 
   /* ───────── 시간 / 힌트 ───────── */
@@ -581,7 +758,7 @@
 
     if (show !== p.hintOn){
       p.hintOn = show;
-      p.wingR.className = show ? 'wing wingR hint' : 'wing wingR';
+      p.play.className = show ? 'play hint' : 'play';
       if (show) p.usedHint = true;
     }
   }
@@ -600,6 +777,8 @@
     if (!running) return;
     running = false;
     if (tickId) { clearInterval(tickId); tickId = null; }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    pointerOwner = {};
     chord([[520, 0], [660, 130], [880, 260], [1046, 390]]);
 
     var list = players.slice(0);
@@ -618,14 +797,10 @@
       md.innerHTML = (i + 1);
       md.style.background = (i < 3) ? medalColor[i] : 'rgba(255,255,255,.35)';
       var nm = mk('div', 'rkName', row);
-      var dot = mk('div', 'pDot', nm);
-      dot.style.background = COLORS[p.n];
-      var t = mk('span', '', nm);
-      t.innerHTML = (playerCount === 1 ? '나' : NAMES[p.n]);
-      var sub = mk('div', 'rkSub', row);
-      sub.innerHTML = '완성 ' + p.cleared + '마리 · 실수 ' + p.mistakes + '번';
-      var sc = mk('div', 'rkScore', row);
-      sc.innerHTML = p.score + '점';
+      mk('div', 'pDot', nm).style.background = COLORS[p.n];
+      mk('span', '', nm).innerHTML = (playerCount === 1 ? '나' : NAMES[p.n]);
+      mk('div', 'rkSub', row).innerHTML = '판 완성 ' + p.cleared + '번 · 실수 ' + p.mistakes + '번';
+      mk('div', 'rkScore', row).innerHTML = p.score + '점';
     }
     $('resultTitle').innerHTML = (timeLeft <= 0) ? '시간 끝!' : '여기까지!';
     goto('screen-result');
@@ -634,8 +809,8 @@
   /* 길게 눌러도 메뉴가 뜨지 않게 */
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
-  window.addEventListener('resize', layoutAll);
-  window.addEventListener('orientationchange', function(){ setTimeout(layoutAll, 300); });
+  window.addEventListener('resize', measureAll);
+  window.addEventListener('orientationchange', function(){ setTimeout(measureAll, 300); });
 })();
 </script>
 </body>
