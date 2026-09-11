@@ -51,6 +51,20 @@
 
 ## 웹으로 배포하기
 
+### 처음 한 번만 — Pages 켜기
+
+GitHub은 저장소마다 Pages를 **사람이 한 번 켜 줘야** 합니다(자동화 토큰으로는 못 켭니다).
+
+1. 저장소 → **Settings** → 왼쪽 **Pages**
+2. **Build and deployment → Source** 를 **GitHub Actions** 로 선택
+3. (혹시 배포 단계에서 권한 오류가 나면) **Settings → Actions → General →
+   Workflow permissions** 를 **Read and write permissions** 로
+
+그 다음 Actions 탭에서 실패한 실행의 **Re-run all jobs** 를 누르거나, 아무 파일이나
+커밋하면 자동으로 배포됩니다.
+
+### 그 뒤로는 자동
+
 `main` 브랜치에 올라가면 `.github/workflows/deploy.yml` 이 자동으로 GitHub Pages에 배포합니다.
 저장소가 **Public** 이어야 하며, 1~2분 뒤 아래 주소에서 열립니다.
 
