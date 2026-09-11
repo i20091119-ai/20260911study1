@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>레이디버그 대칭 놀이</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Jua Web', 'Jua', 'Malgun Gothic', '맑은 고딕', sans-serif;
+    margin: 0; overflow: hidden;
+    background: #24365c;
+    background-image: radial-gradient(circle at 50% 38%, #2e4577 0%, #24365c 58%, #1a2745 100%);
+    color: #fff;
+    display: flex; flex-direction: column;
+    touch-action: manipulation;
+  }
+
+  /* ── 기관 로고 (왼쪽 위 고정) ───────────────────────── */
+  #orgLogoFixed {
+    position: fixed; top: 1.5vmin; left: 1.5vmin; z-index: 80;
+    background: #fff; border-radius: 1.5vmin; padding: .9vmin 1.8vmin;
+  }
+  #orgLogoFixed img { height: 4.6vmin; display: block; }
+
+  /* ── 공통 ──────────────────────────────────────────── */
+  .row { display: flex; align-items: center; justify-content: center; }
+  .row > * + * { margin-left: 2vmin; }
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .col > * + * { margin-top: 2vmin; }
+
+  .bigBtn {
+    font-family: inherit; font-size: 3.6vmin; font-weight: bold; color: #fff;
+    padding: 2.2vmin 6vmin; border: none; border-radius: 2vmin; cursor: pointer;
+    background: #43a047; box-shadow: 0 6px 0 rgba(0,0,0,.35);
+  }
+  .bigBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .subBtn {
+    font-family: inherit; font-size: 2.4vmin; color: #24365c; background: #ffd54f;
+    padding: 1.2vmin 3.4vmin; border: none; border-radius: 1.4vmin; cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,.3);
+  }
+  .subBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
+
+  .screen {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2vmin;
+  }
+  .screen.on { display: flex; }
+
+  /* ── 시작 화면 ─────────────────────────────────────── */
+  #titleText { font-size: 9vmin; color: #ffd54f; text-shadow: 0 .8vmin 0 rgba(0,0,0,.35); letter-spacing: .3vmin; }
+  #titleSub { font-size: 3.2vmin; color: #cfe0ff; }
+  .pickLabel { font-size: 3.4vmin; color: #fff; }
+  .pickBtn {
+    font-family: inherit; font-size: 4.6vmin; color: #fff; width: 16vmin; height: 16vmin;
+    border: .6vmin solid rgba(255,255,255,.45); border-radius: 3vmin; cursor: pointer;
+    background: #35508a; box-shadow: 0 6px 0 rgba(0,0,0,.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .pickBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .pickBtn .num { font-size: 6vmin; line-height: 1; }
+  .pickBtn .cap { font-size: 2.2vmin; margin-top: .8vmin; color: #cfe0ff; }
+
+  /* 타이틀용 장식 무당벌레 */
+  #titleBug { position: relative; width: 22vmin; height: 24vmin; }
+  #titleBug .h { position: absolute; top: 0; left: 5.7vmin; width: 10.6vmin; height: 6.6vmin; background: #23272e; border-radius: 50%; }
+  #titleBug .b { position: absolute; top: 3.4vmin; left: 0; width: 22vmin; height: 20vmin; background: #e53935; border: .7vmin solid #23272e; border-radius: 50%; }
+  #titleBug .s { position: absolute; top: 4.4vmin; left: 10.6vmin; width: .8vmin; height: 18vmin; background: #23272e; border-radius: .4vmin; }
+  #titleBug .d { position: absolute; background: #23272e; border-radius: 50%; }
+  #titleBug .eye { position: absolute; top: 2.2vmin; width: 2vmin; height: 2vmin; background: #fff; border-radius: 50%; }
+
+  /* ── 규칙 안내 ─────────────────────────────────────── */
+  #rulesBox {
+    background: rgba(12,22,46,.72); border: .5vmin solid rgba(255,255,255,.25);
+    border-radius: 3vmin; padding: 3.5vmin 5vmin; max-width: 86vw;
+  }
+  #rulesBox h2 { margin: 0 0 2vmin 0; font-size: 4.4vmin; color: #ffd54f; text-align: center; }
+  .ruleLine { display: flex; align-items: center; font-size: 3vmin; line-height: 1.5; }
+  .ruleLine + .ruleLine { margin-top: 1.6vmin; }
+  .ruleNo {
+    width: 5vmin; height: 5vmin; border-radius: 50%; background: #ffd54f; color: #24365c;
+    font-size: 2.8vmin; display: flex; align-items: center; justify-content: center;
+    margin-right: 2vmin; flex-shrink: 0;
+  }
+  .hi { color: #ffd54f; }
+
+  /* ── 게임 화면 ─────────────────────────────────────── */
+  #screen-game.on { justify-content: flex-start; padding: 0; }
+  #gameTop {
+    width: 100%; height: 11vmin; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  #timeText { font-size: 5vmin; color: #ffd54f; }
+  #timeBarWrap {
+    position: absolute; left: 30vw; right: 30vw; bottom: 1vmin; height: 1.4vmin;
+    background: rgba(255,255,255,.18); border-radius: .7vmin; overflow: hidden;
+  }
+  #timeBar { height: 100%; width: 100%; background: #ffd54f; }
+  #quitBtn { position: absolute; top: 2vmin; right: 2vmin; }
+
+  #board { width: 100%; flex: 1; display: grid; grid-gap: 1.2vmin; padding: 1.2vmin; }
+  #board.p1 { grid-template-columns: 1fr; }
+  #board.p2 { grid-template-columns: 1fr 1fr; }
+  #board.p3 { grid-template-columns: 1fr 1fr 1fr; }
+  #board.p4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .panel {
+    background: rgba(255,255,255,.07); border: .5vmin solid rgba(255,255,255,.2);
+    border-radius: 2.4vmin; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .pBar {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: .8vmin 1.8vmin; font-size: 2.8vmin; background: rgba(0,0,0,.22);
+  }
+  #board.p1 .pBar { font-size: 3.6vmin; }
+  #board.p2 .pBar { font-size: 3vmin; }
+  #board.p3 .pBar, #board.p4 .pBar { font-size: 2.5vmin; }
+  .pName { display: flex; align-items: center; }
+  .pDot { width: 3vmin; height: 3vmin; border-radius: 50%; margin-right: 1.2vmin; border: .3vmin solid rgba(255,255,255,.6); }
+  .pScore { color: #ffd54f; }
+  .pStage { color: #cfe0ff; font-size: .84em; }
+  .bugWrap { flex: 1; position: relative; }
+
+  .bug { position: absolute; }
+  .bugHead { position: absolute; background: #23272e; border-radius: 50%; }
+  .bugEye { position: absolute; background: #fff; border-radius: 50%; }
+  .bugBody { position: absolute; background: #e53935; border-radius: 50%; border-style: solid; border-color: #23272e; overflow: hidden; }
+  .bugSpine { position: absolute; background: #23272e; border-radius: 1vmin; }
+  .wing { position: absolute; display: grid; }
+  .cell { position: relative; border-radius: 22%; }
+  .wingR .cell { background: rgba(255,255,255,.22); box-shadow: inset 0 0 0 .25vmin rgba(255,255,255,.3); }
+  .wingR .cell.done { background: transparent; box-shadow: none; }
+  .spot { position: absolute; top: 8%; left: 8%; width: 84%; height: 84%; background: #23272e; border-radius: 50%; }
+  .spot.pop { animation: pop .28s ease-out; }
+  @keyframes pop { 0% { transform: scale(.2); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .ghost {
+    position: absolute; top: 14%; left: 14%; width: 72%; height: 72%;
+    border-radius: 50%; border-style: dashed; border-color: rgba(35,39,46,.75); display: none;
+  }
+  .wingR.hint .cell.need .ghost { display: block; }
+  .cell.bad { animation: bad .35s ease-out; }
+  @keyframes bad { 0%,100% { transform: translateX(0); background: rgba(255,255,255,.22); } 25% { transform: translateX(-12%); background: rgba(255,255,255,.7); } 75% { transform: translateX(12%); background: rgba(255,255,255,.7); } }
+
+  .burst {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 6vmin; color: #fff; text-shadow: 0 .5vmin 0 rgba(0,0,0,.4);
+    background: rgba(67,160,71,.92); padding: 1.2vmin 4vmin; border-radius: 2vmin;
+    display: none; z-index: 5;
+  }
+  .burst.on { display: block; animation: pop .35s ease-out; }
+
+  /* ── 결과 화면 ─────────────────────────────────────── */
+  #resultTitle { font-size: 7vmin; color: #ffd54f; }
+  #rankList { width: 68vw; }
+  .rankRow {
+    display: flex; align-items: center; background: rgba(255,255,255,.1);
+    border-radius: 2vmin; padding: 1.4vmin 2.4vmin; font-size: 3.4vmin;
+  }
+  .rankRow + .rankRow { margin-top: 1.4vmin; }
+  .medal {
+    width: 7vmin; height: 7vmin; border-radius: 50%; color: #3a2c05;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.4vmin; margin-right: 2.4vmin; flex-shrink: 0;
+    border: .5vmin solid rgba(255,255,255,.6);
+  }
+  .rkName { flex: 1; display: flex; align-items: center; }
+  .rkScore { color: #ffd54f; font-size: 4vmin; margin-left: 2vmin; }
+  .rkSub { color: #cfe0ff; font-size: 2.4vmin; margin-left: 2vmin; }
+</style>
+</head>
+<body>
+
+<div id="orgLogoFixed">
+  <img src="assets/gnmc_logo.png" alt="경남수학문화관"
+       onerror="document.getElementById('orgLogoFixed').style.display='none'">
+</div>
+
+<!-- ① 시작 화면 -->
+<div class="screen on" id="screen-start">
+  <div class="row">
+    <div id="titleBug">
+      <div class="h"></div>
+      <div class="eye" style="left:7.4vmin"></div>
+      <div class="eye" style="left:12.6vmin"></div>
+      <div class="b"></div>
+      <div class="s"></div>
+      <div class="d" style="width:3.4vmin;height:3.4vmin;top:8vmin;left:4.2vmin"></div>
+      <div class="d" style="width:3.4vmin;height:3.4vmin;top:8vmin;left:14.4vmin"></div>
+      <div class="d" style="width:2.6vmin;height:2.6vmin;top:15vmin;left:5.6vmin"></div>
+      <div class="d" style="width:2.6vmin;height:2.6vmin;top:15vmin;left:13.8vmin"></div>
+    </div>
+    <div class="col">
+      <div id="titleText">레이디버그 대칭 놀이</div>
+      <div id="titleSub">왼쪽 날개를 거울처럼 따라 찍어요!</div>
+    </div>
+  </div>
+  <div style="height:5vmin"></div>
+  <div class="pickLabel">몇 명이 할까요?</div>
+  <div style="height:2.5vmin"></div>
+  <div class="row" id="pickRow"></div>
+</div>
+
+<!-- ② 규칙 안내 -->
+<div class="screen" id="screen-rules">
+  <div id="rulesBox">
+    <h2>이렇게 놀아요</h2>
+    <div class="ruleLine"><div class="ruleNo">1</div><div>무당벌레 <span class="hi">왼쪽 날개</span>에 점이 찍혀 있어요.</div></div>
+    <div class="ruleLine"><div class="ruleNo">2</div><div><span class="hi">오른쪽 날개</span>에서 거울처럼 대칭이 되는 칸을 손가락으로 누르세요.</div></div>
+    <div class="ruleLine"><div class="ruleNo">3</div><div>맞으면 <span class="hi">5점</span>, 한 마리를 완성하면 <span class="hi">20점</span>! 힌트 없이 완성하면 <span class="hi">10점</span> 더!</div></div>
+    <div class="ruleLine"><div class="ruleNo">4</div><div>힌트(점선)는 1~2판은 계속, 3판은 10초 뒤, <span class="hi">4판부터는 없어요.</span></div></div>
+    <div class="ruleLine"><div class="ruleNo">5</div><div>제한시간 <span class="hi">2분</span>. 모두 <span class="hi">동시에</span> 자기 무당벌레를 완성하세요!</div></div>
+  </div>
+  <div style="height:4vmin"></div>
+  <div class="row">
+    <button class="subBtn" id="backBtn">뒤로</button>
+    <button class="bigBtn" id="startBtn">시작하기!</button>
+  </div>
+</div>
+
+<!-- ③ 게임 화면 -->
+<div class="screen" id="screen-game">
+  <div id="gameTop">
+    <div id="timeText">2:00</div>
+    <div id="timeBarWrap"><div id="timeBar"></div></div>
+    <button class="subBtn" id="quitBtn">그만</button>
+  </div>
+  <div id="board"></div>
+</div>
+
+<!-- ④ 결과 화면 -->
+<div class="screen" id="screen-result">
+  <div id="resultTitle">시간 끝!</div>
+  <div style="height:3vmin"></div>
+  <div id="rankList"></div>
+  <div style="height:4vmin"></div>
+  <button class="bigBtn" id="againBtn">다시 하기</button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ───────── 효과음 (파일 없이 Web Audio) ───────── */
+  var actx = null;
+  function beep(freq, dur, type, vol){
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'square';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.06, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + dur);
+    } catch (e) {}
+  }
+  function chord(list){
+    for (var i = 0; i < list.length; i++){
+      (function(f, d){ setTimeout(function(){ beep(f, 0.12, 'square', 0.07); }, d); })(list[i][0], list[i][1]);
+    }
+  }
+
+  /* ───────── 터치 헬퍼 (click 대신 pointerdown) ───────── */
+  function onTap(el, fn){
+    if (window.PointerEvent){
+      el.addEventListener('pointerdown', function(e){ e.preventDefault(); fn(e); });
+    } else {
+      var touched = false;
+      el.addEventListener('touchstart', function(e){ touched = true; e.preventDefault(); fn(e); });
+      el.addEventListener('mousedown', function(e){ if (touched) return; e.preventDefault(); fn(e); });
+    }
+  }
+  function mk(tag, cls, parent){
+    var d = document.createElement(tag);
+    if (cls) d.className = cls;
+    if (parent) parent.appendChild(d);
+    return d;
+  }
+  function $(id){ return document.getElementById(id); }
+
+  /* ───────── 설정 ───────── */
+  var COLORS = ['#e53935', '#1e88e5', '#43a047', '#f9a825'];
+  var NAMES  = ['빨강', '파랑', '초록', '노랑'];
+  var LEVELS = [
+    { rows: 2, cols: 2, spots: 2 },
+    { rows: 3, cols: 2, spots: 3 },
+    { rows: 3, cols: 3, spots: 4 },
+    { rows: 4, cols: 3, spots: 5 },
+    { rows: 4, cols: 3, spots: 6 },
+    { rows: 4, cols: 4, spots: 6 },
+    { rows: 4, cols: 4, spots: 8 }
+  ];
+  var GAME_TIME = 120;
+
+  var players = [];
+  var playerCount = 1;
+  var timeLeft = GAME_TIME;
+  var tickId = null;
+  var running = false;
+
+  /* ───────── 화면 전환 ───────── */
+  function goto(id){
+    var all = document.querySelectorAll('.screen');
+    for (var i = 0; i < all.length; i++) all[i].className = 'screen';
+    $(id).className = 'screen on';
+  }
+
+  /* ───────── 시작 화면 인원 선택 ───────── */
+  (function buildPick(){
+    var row = $('pickRow');
+    for (var i = 1; i <= 4; i++){
+      (function(n){
+        var b = mk('button', 'pickBtn', row);
+        var num = mk('div', 'num', b); num.innerHTML = n;
+        var cap = mk('div', 'cap', b); cap.innerHTML = '명';
+        onTap(b, function(){ playerCount = n; beep(740, 0.07); goto('screen-rules'); });
+      })(i);
+    }
+  })();
+
+  onTap($('backBtn'), function(){ beep(420, 0.07); goto('screen-start'); });
+  onTap($('startBtn'), function(){ beep(880, 0.09); startGame(); });
+  onTap($('quitBtn'), function(){ endGame(); });
+  onTap($('againBtn'), function(){ beep(660, 0.08); goto('screen-start'); });
+
+  /* ───────── 게임 시작 ───────── */
+  function startGame(){
+    var board = $('board');
+    board.innerHTML = '';
+    board.className = 'p' + playerCount;
+    players = [];
+
+    for (var i = 0; i < playerCount; i++){
+      var p = {
+        n: i, score: 0, round: 0, cleared: 0, mistakes: 0,
+        rows: 2, cols: 2, need: [], left: 0, usedHint: false,
+        roundStart: 0, hintOn: false
+      };
+      p.panel  = mk('div', 'panel', board);
+      var bar  = mk('div', 'pBar', p.panel);
+      var nm   = mk('div', 'pName', bar);
+      var dot  = mk('div', 'pDot', nm); dot.style.background = COLORS[i];
+      var lbl  = mk('span', '', nm); lbl.innerHTML = (playerCount === 1 ? '나' : NAMES[i]);
+      p.stageEl = mk('div', 'pStage', bar);
+      p.scoreEl = mk('div', 'pScore', bar);
+      p.wrap  = mk('div', 'bugWrap', p.panel);
+      p.bug   = mk('div', 'bug', p.wrap);
+      p.head  = mk('div', 'bugHead', p.bug);
+      p.eye1  = mk('div', 'bugEye', p.bug);
+      p.eye2  = mk('div', 'bugEye', p.bug);
+      p.body  = mk('div', 'bugBody', p.bug);
+      p.spine = mk('div', 'bugSpine', p.body);
+      p.wingL = mk('div', 'wing wingL', p.body);
+      p.wingR = mk('div', 'wing wingR', p.body);
+      p.burst = mk('div', 'burst', p.wrap);
+      p.burst.innerHTML = '완성!';
+      players.push(p);
+      newRound(p);
+    }
+
+    timeLeft = GAME_TIME;
+    updateTime();
+    goto('screen-game');
+    /* 화면이 보이게 된 뒤에 크기를 계산해야 함 (숨겨진 요소는 크기가 0) */
+    layoutAll();
+    setTimeout(layoutAll, 60);
+    running = true;
+    if (tickId) clearInterval(tickId);
+    tickId = setInterval(tick, 200);
+  }
+
+  /* ───────── 한 판 만들기 ───────── */
+  function newRound(p){
+    p.round++;
+    var maxLv = (playerCount >= 3) ? 4 : (LEVELS.length - 1);
+    var li = p.round - 1;
+    if (li > maxLv) li = maxLv;
+    var lv = LEVELS[li];
+    p.rows = lv.rows;
+    p.cols = lv.cols;
+
+    var total = p.rows * p.cols;
+    var idxs = [];
+    for (var i = 0; i < total; i++) idxs.push(i);
+    for (var j = idxs.length - 1; j > 0; j--){
+      var k = Math.floor(Math.random() * (j + 1));
+      var t = idxs[j]; idxs[j] = idxs[k]; idxs[k] = t;
+    }
+    var count = Math.min(lv.spots, total - 1);
+    var pattern = [];
+    for (var m = 0; m < total; m++) pattern.push(false);
+    for (var q = 0; q < count; q++) pattern[idxs[q]] = true;
+
+    p.need = [];
+    for (var r = 0; r < p.rows; r++){
+      for (var c = 0; c < p.cols; c++){
+        p.need[r * p.cols + (p.cols - 1 - c)] = pattern[r * p.cols + c];
+      }
+    }
+    p.left = count;
+    p.usedHint = false;
+    p.hintOn = false;
+    p.roundStart = Date.now();
+
+    /* 왼쪽 날개(문제) */
+    p.wingL.innerHTML = '';
+    p.wingL.style.gridTemplateColumns = repeat(p.cols);
+    p.wingL.style.gridTemplateRows = repeat(p.rows);
+    for (var a = 0; a < total; a++){
+      var cl = mk('div', 'cell', p.wingL);
+      if (pattern[a]) mk('div', 'spot', cl);
+    }
+
+    /* 오른쪽 날개(정답 찍는 곳) */
+    p.wingR.innerHTML = '';
+    p.wingR.className = 'wing wingR';
+    p.wingR.style.gridTemplateColumns = repeat(p.cols);
+    p.wingR.style.gridTemplateRows = repeat(p.rows);
+    p.cells = [];
+    for (var b = 0; b < total; b++){
+      (function(idx){
+        var cl = mk('div', 'cell', p.wingR);
+        if (p.need[idx]) cl.className = 'cell need';
+        mk('div', 'ghost', cl);
+        onTap(cl, function(){ tapCell(p, idx, cl); });
+        p.cells.push(cl);
+      })(b);
+    }
+    updateBar(p);
+    layoutOne(p);
+  }
+
+  function repeat(n){
+    var s = '';
+    for (var i = 0; i < n; i++) s += (i ? ' ' : '') + '1fr';
+    return s;
+  }
+
+  function updateBar(p){
+    p.scoreEl.innerHTML = p.score + '점';
+    p.stageEl.innerHTML = p.round + '판 · 남은 점 ' + p.left;
+  }
+
+  /* ───────── 칸 누르기 ───────── */
+  function tapCell(p, idx, cl){
+    if (!running) return;
+    if (cl.getAttribute('data-done') === '1') return;
+
+    if (p.need[idx]){
+      cl.setAttribute('data-done', '1');
+      cl.className = 'cell done';
+      var sp = mk('div', 'spot pop', cl);
+      sp.style.background = '#23272e';
+      p.score += 5;
+      p.left--;
+      beep(880, 0.07, 'square', 0.05);
+      updateBar(p);
+      if (p.left <= 0) roundDone(p);
+    } else {
+      p.mistakes++;
+      beep(160, 0.16, 'sawtooth', 0.05);
+      cl.className = 'cell bad';
+      (function(c){
+        setTimeout(function(){
+          if (c.getAttribute('data-done') !== '1') c.className = (p.need[idx] ? 'cell need' : 'cell');
+        }, 360);
+      })(cl);
+    }
+  }
+
+  function roundDone(p){
+    p.cleared++;
+    p.score += 20;
+    var bonus = !p.usedHint;
+    if (bonus) p.score += 10;
+    updateBar(p);
+    chord([[660, 0], [880, 90], [1180, 180]]);
+    p.burst.innerHTML = bonus ? '완성! +30' : '완성! +20';
+    p.burst.className = 'burst on';
+    setTimeout(function(){
+      p.burst.className = 'burst';
+      if (running) newRound(p);
+    }, 700);
+  }
+
+  /* ───────── 크기 계산 (aspect-ratio 대신 JS) ───────── */
+  function layoutAll(){
+    for (var i = 0; i < players.length; i++) layoutOne(players[i]);
+  }
+
+  function layoutOne(p){
+    var w = p.wrap.clientWidth, h = p.wrap.clientHeight;
+    if (!w || !h) return;
+
+    var bugW = Math.min(w * 0.94, (h * 0.99) / 1.33);
+    var bugH = bugW * 1.15;
+    var over = bugH * 0.15;
+
+    p.bug.style.width = bugW + 'px';
+    p.bug.style.height = (bugH + over) + 'px';
+    p.bug.style.left = ((w - bugW) / 2) + 'px';
+    p.bug.style.top = ((h - bugH - over) / 2) + 'px';
+
+    var hw = bugW * 0.54, hh = bugH * 0.32;
+    p.head.style.width = hw + 'px';
+    p.head.style.height = hh + 'px';
+    p.head.style.left = ((bugW - hw) / 2) + 'px';
+    p.head.style.top = '0px';
+
+    var ew = bugW * 0.075;
+    p.eye1.style.width = p.eye2.style.width = ew + 'px';
+    p.eye1.style.height = p.eye2.style.height = ew + 'px';
+    p.eye1.style.top = p.eye2.style.top = (hh * 0.30) + 'px';
+    p.eye1.style.left = (bugW / 2 - hw * 0.28 - ew / 2) + 'px';
+    p.eye2.style.left = (bugW / 2 + hw * 0.28 - ew / 2) + 'px';
+
+    p.body.style.width = bugW + 'px';
+    p.body.style.height = bugH + 'px';
+    p.body.style.left = '0px';
+    p.body.style.top = over + 'px';
+    p.body.style.borderWidth = Math.max(2, bugW * 0.022) + 'px';
+
+    var sw = Math.max(3, bugW * 0.035);
+    p.spine.style.width = sw + 'px';
+    p.spine.style.height = (bugH * 0.84) + 'px';
+    p.spine.style.left = (bugW / 2 - sw / 2) + 'px';
+    p.spine.style.top = (bugH * 0.08) + 'px';
+
+    var midGap = bugW * 0.05;
+    var availW = bugW * 0.5 - midGap - bugW * 0.065;
+    var availH = bugH * 0.70;
+    var cell = Math.min(
+      availW / (p.cols + (p.cols - 1) * 0.16),
+      availH / (p.rows + (p.rows - 1) * 0.16)
+    );
+    var gp = cell * 0.16;
+    var gw = p.cols * cell + (p.cols - 1) * gp;
+    var gh = p.rows * cell + (p.rows - 1) * gp;
+    var top = (bugH - gh) / 2 + bugH * 0.04;
+
+    p.wingL.style.width = gw + 'px';
+    p.wingL.style.height = gh + 'px';
+    p.wingL.style.top = top + 'px';
+    p.wingL.style.left = (bugW / 2 - midGap - gw) + 'px';
+    p.wingL.style.gridGap = gp + 'px';
+
+    p.wingR.style.width = gw + 'px';
+    p.wingR.style.height = gh + 'px';
+    p.wingR.style.top = top + 'px';
+    p.wingR.style.left = (bugW / 2 + midGap) + 'px';
+    p.wingR.style.gridGap = gp + 'px';
+
+    var gs = document.querySelectorAll('.ghost');
+    for (var i = 0; i < gs.length; i++) gs[i].style.borderWidth = Math.max(2, cell * 0.1) + 'px';
+  }
+
+  /* ───────── 시간 / 힌트 ───────── */
+  var lastSec = -1;
+  function tick(){
+    if (!running) return;
+    timeLeft -= 0.2;
+    if (timeLeft <= 0){ timeLeft = 0; updateTime(); endGame(); return; }
+
+    var s = Math.ceil(timeLeft);
+    if (s !== lastSec){
+      lastSec = s;
+      updateTime();
+      if (s <= 5 && s > 0) beep(1000, 0.08, 'sine', 0.05);
+    }
+    for (var i = 0; i < players.length; i++) updateHint(players[i]);
+  }
+
+  function updateHint(p){
+    var show;
+    if (p.round <= 2) show = true;
+    else if (p.round === 3) show = (Date.now() - p.roundStart) > 10000;
+    else show = false;
+
+    if (show !== p.hintOn){
+      p.hintOn = show;
+      p.wingR.className = show ? 'wing wingR hint' : 'wing wingR';
+      if (show) p.usedHint = true;
+    }
+  }
+
+  function updateTime(){
+    var s = Math.ceil(timeLeft);
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    $('timeText').innerHTML = m + ':' + (r < 10 ? '0' + r : r);
+    $('timeBar').style.width = (timeLeft / GAME_TIME * 100) + '%';
+    $('timeText').style.color = (s <= 10) ? '#ff8a80' : '#ffd54f';
+  }
+
+  /* ───────── 결과 ───────── */
+  function endGame(){
+    if (!running) return;
+    running = false;
+    if (tickId) { clearInterval(tickId); tickId = null; }
+    chord([[520, 0], [660, 130], [880, 260], [1046, 390]]);
+
+    var list = players.slice(0);
+    list.sort(function(a, b){
+      if (b.score !== a.score) return b.score - a.score;
+      return a.mistakes - b.mistakes;
+    });
+
+    var box = $('rankList');
+    box.innerHTML = '';
+    var medalColor = ['#ffd54f', '#dfe6ea', '#dba36a'];
+    for (var i = 0; i < list.length; i++){
+      var p = list[i];
+      var row = mk('div', 'rankRow', box);
+      var md = mk('div', 'medal', row);
+      md.innerHTML = (i + 1);
+      md.style.background = (i < 3) ? medalColor[i] : 'rgba(255,255,255,.35)';
+      var nm = mk('div', 'rkName', row);
+      var dot = mk('div', 'pDot', nm);
+      dot.style.background = COLORS[p.n];
+      var t = mk('span', '', nm);
+      t.innerHTML = (playerCount === 1 ? '나' : NAMES[p.n]);
+      var sub = mk('div', 'rkSub', row);
+      sub.innerHTML = '완성 ' + p.cleared + '마리 · 실수 ' + p.mistakes + '번';
+      var sc = mk('div', 'rkScore', row);
+      sc.innerHTML = p.score + '점';
+    }
+    $('resultTitle').innerHTML = (timeLeft <= 0) ? '시간 끝!' : '여기까지!';
+    goto('screen-result');
+  }
+
+  /* 길게 눌러도 메뉴가 뜨지 않게 */
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  window.addEventListener('resize', layoutAll);
+  window.addEventListener('orientationchange', function(){ setTimeout(layoutAll, 300); });
+})();
+</script>
+</body>
+</html>
